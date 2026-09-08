@@ -1,0 +1,164 @@
+﻿<!doctype html>
+<html lang="zh-CN" data-theme="light" data-font="sans" data-size="md">
+<head>
+<meta charset="utf-8">
+<title>CodeEnglish 翻译结果区样例</title>
+<style>
+:root {
+  --bg: #FFFFFF; --bg-2: #F6F7F9; --bg-3: #EEF0F3; --border: #E3E6EA;
+  --text: #1F2329; --text-2: #5F6672; --text-3: #9AA0A8;
+  --accent: #2F6FED; --accent-bg: #EAF1FE;
+  --hl-bg: #FFF1BF; --hl-text: inherit; --star: #F5A623; --ok: #22A06B; --danger: #E5484D;
+  --shadow: 0 8px 24px rgba(0,0,0,.18);
+  --font-ui: "Segoe UI", "Microsoft YaHei UI", system-ui, sans-serif;
+  --font-en: "Segoe UI", system-ui, sans-serif;
+  --xl: 18px;
+}
+[data-theme="dark"] {
+  --bg: #1E1F22; --bg-2: #2B2D31; --bg-3: #35373C; --border: #3A3D42;
+  --text: #E8E8E8; --text-2: #A0A4AB; --text-3: #6F7480;
+  --accent: #6EA0FF; --accent-bg: #26334D;
+  --hl-bg: #3D3520; --hl-text: #FFE08A; --star: #F5B942; --ok: #3DBE85; --danger: #F26D72;
+  --shadow: 0 8px 24px rgba(0,0,0,.4);
+}
+[data-font="mono"] { --font-en: "Cascadia Code", "Consolas", monospace; }
+[data-size="sm"] { --xl: 16px; }
+[data-size="lg"] { --xl: 21px; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  font-family: var(--font-ui); font-size: 14px; line-height: 1.5; color: var(--text);
+  background: var(--bg-3); min-height: 100vh; display: flex; align-items: flex-start;
+  justify-content: center; gap: 24px; padding: 32px 16px;
+  transition: background-color 120ms, color 120ms;
+}
+.controls { display: flex; flex-direction: column; gap: 8px; width: 160px; font-size: 13px; color: var(--text-2); }
+.controls button {
+  font: inherit; padding: 6px 10px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--bg); color: var(--text); cursor: pointer; text-align: left;
+}
+.controls button:hover { background: var(--bg-2); }
+.controls .group { margin-top: 12px; font-size: 12px; color: var(--text-3); }
+
+.win {
+  width: 400px; height: 520px; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 10px; box-shadow: var(--shadow); display: flex; flex-direction: column;
+  overflow: hidden; transition: background-color 120ms;
+}
+.topbar, .bottombar { height: 40px; display: flex; align-items: center; padding: 0 16px; flex: none; }
+.topbar { border-bottom: 1px solid var(--border); gap: 8px; }
+.bottombar { border-top: 1px solid var(--border); justify-content: space-around; font-size: 13px; color: var(--text-2); }
+.bottombar span.active { color: var(--accent); }
+.scene {
+  font-size: 13px; padding: 3px 8px; border-radius: 6px; background: var(--accent-bg); color: var(--accent);
+}
+.topbar .spacer { flex: 1; }
+.icon { width: 18px; height: 18px; color: var(--text-2); stroke: currentColor; fill: none; stroke-width: 1.75; }
+.icon.sm { width: 16px; height: 16px; }
+.icon.star-on { color: var(--star); fill: var(--star); }
+
+.input {
+  margin: 16px 16px 0; padding: 10px 12px; min-height: 76px; border-radius: 6px;
+  background: var(--bg-2); border: 1px solid var(--border); position: relative;
+}
+.input .hint { position: absolute; right: 12px; bottom: 8px; font-size: 12px; color: var(--text-3); }
+
+.result { flex: 1; overflow: auto; padding: 16px; }
+.result::-webkit-scrollbar { width: 6px; }
+.result::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+.sent { display: flex; align-items: baseline; gap: 8px; font-family: var(--font-en); }
+.sent .no { width: 20px; flex: none; font-size: 12px; color: var(--text-3); text-align: right; }
+.sent .txt { font-size: var(--xl); line-height: 1.65; font-weight: 500; letter-spacing: .01em; flex: 1; }
+.hl { background: var(--hl-bg); color: var(--hl-text); border-radius: 3px; padding: 0 3px; }
+.actions { display: flex; justify-content: flex-end; gap: 4px; margin-top: 4px; }
+.actions .icon { padding: 3px; width: 24px; height: 24px; border-radius: 6px; }
+.actions .icon:hover { background: var(--bg-3); color: var(--text); }
+
+hr { border: 0; border-top: 1px solid var(--border); margin: 16px 0; }
+
+.kw { display: flex; align-items: flex-start; gap: 8px; }
+.kw + .kw { margin-top: 12px; }
+.kw .body { flex: 1; }
+.kw .word { font-family: var(--font-en); font-size: 16px; font-weight: 600; }
+.kw .word .hl { padding: 0 4px; }
+.kw .desc { font-size: 13px; color: var(--text-2); margin-top: 2px; }
+.kw .meta { font-size: 12px; color: var(--text-3); margin-top: 2px; }
+.kw .icon { flex: none; margin-top: 3px; }
+
+.alt { margin-top: 16px; font-size: 13px; color: var(--text-2); cursor: pointer; }
+</style>
+</head>
+<body>
+
+<div class="controls">
+  <div class="group">主题</div>
+  <button onclick="set('theme','light')">浅色</button>
+  <button onclick="set('theme','dark')">深色</button>
+  <div class="group">翻译字体</div>
+  <button onclick="set('font','sans')">A · Segoe UI</button>
+  <button onclick="set('font','mono')">B · Cascadia Code</button>
+  <div class="group">翻译字号</div>
+  <button onclick="set('size','sm')">小 16px</button>
+  <button onclick="set('size','md')">中 18px</button>
+  <button onclick="set('size','lg')">大 21px</button>
+</div>
+
+<div class="win">
+  <div class="topbar">
+    <span class="scene">工作 ▾</span>
+    <span class="spacer"></span>
+    <svg class="icon" viewBox="0 0 24 24"><path d="M12 17v5M9 10.76a2 2 0 0 1-1.11 1.79l-1.78.9A2 2 0 0 0 5 15.24V16a1 1 0 0 0 1 1h12a1 1 0 0 0 1-1v-.76a2 2 0 0 0-1.11-1.79l-1.78-.9A2 2 0 0 1 15 10.76V7a1 1 0 0 1 1-1 2 2 0 0 0 0-4H8a2 2 0 0 0 0 4 1 1 0 0 1 1 1z"/></svg>
+    <svg class="icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="1"/><circle cx="19" cy="12" r="1"/><circle cx="5" cy="12" r="1"/></svg>
+  </div>
+
+  <div class="input">
+    加个全局异常处理，所有接口统一返回格式
+    <span class="hint">Enter 翻译 · Ctrl+Enter 换行</span>
+  </div>
+
+  <div class="result">
+    <div class="sent"><span class="no">1.</span><span class="txt">Add a <span class="hl">global exception handler</span>.</span></div>
+    <div class="sent"><span class="no">2.</span><span class="txt">Return a <span class="hl">unified response format</span> for all <span class="hl">endpoints</span>.</span></div>
+    <div class="actions">
+      <svg class="icon" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4zM15.5 8.5a5 5 0 0 1 0 7M19 5a9 9 0 0 1 0 14"/></svg>
+      <svg class="icon" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+    </div>
+
+    <hr>
+
+    <div class="kw">
+      <div class="body">
+        <div class="word"><span class="hl">global exception handler</span></div>
+        <div class="desc">Spring 圈子固定说法，对应 @ControllerAdvice</div>
+      </div>
+      <svg class="icon sm" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+    </div>
+    <div class="kw">
+      <div class="body">
+        <div class="word"><span class="hl">unified response format</span></div>
+        <div class="desc">统一返回格式。unified 比 same / consistent 更强调"一套标准"</div>
+        <div class="meta">已收藏 · 第 3 次遇到</div>
+      </div>
+      <svg class="icon sm star-on" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+    </div>
+    <div class="kw">
+      <div class="body">
+        <div class="word"><span class="hl">endpoint</span></div>
+        <div class="desc">对 AI 说"接口"用 endpoint，interface 会被理解成 Java 接口</div>
+      </div>
+      <svg class="icon sm" viewBox="0 0 24 24"><path d="m12 2 3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z"/></svg>
+    </div>
+  </div>
+
+  <div class="bottombar"><span class="active">翻译</span><span>历史</span><span>收藏</span><span>设置</span></div>
+</div>
+
+<script>
+function set(k, v) { document.documentElement.dataset[k] = v; }
+// 支持通过 URL 参数预设，例如 ?theme=dark&font=mono&size=lg
+new URLSearchParams(location.search).forEach((v, k) => set(k, v));
+</script>
+</body>
+</html>

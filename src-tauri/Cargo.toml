@@ -1,0 +1,46 @@
+[package]
+name = "codeenglish"
+version = "0.1.0"
+description = "程序员英语翻译练习工具"
+authors = ["jack_liu"]
+edition = "2021"
+
+[lib]
+name = "codeenglish_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2", features = ["tray-icon"] }
+tauri-plugin-opener = "2"
+tauri-plugin-global-shortcut = "2"
+tauri-plugin-autostart = "2"
+tauri-plugin-store = "2"
+
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+thiserror = "2"
+async-trait = "0.1"
+chrono = { version = "0.4", features = ["serde"] }
+
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "time"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+
+# SQLite 打包进二进制，不依赖系统库；两个平台一致
+rusqlite = { version = "0.32", features = ["bundled"] }
+
+# API Key 存系统钥匙串：Windows 凭据管理器 / macOS Keychain
+keyring = { version = "3", features = ["windows-native", "apple-native"] }
+
+# 无边框窗口让 DWM 画圆角，去掉系统那圈直角描边
+[target.'cfg(windows)'.dependencies]
+windows = { version = "0.61", features = ["Win32_Foundation", "Win32_Graphics_Dwm"] }
+
+[profile.release]
+codegen-units = 1
+lto = true
+opt-level = 3
+panic = "abort"
+strip = true
