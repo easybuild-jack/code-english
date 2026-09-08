@@ -286,7 +286,7 @@ onMounted(async () => {
           未置顶时失焦吸附到
           <Segmented v-model="settings.dockEdge" :options="DOCK_OPTS" />
         </label>
-        <p class="note">取消置顶后，窗口失去焦点会缩到屏幕边缘只留一条边，鼠标碰一下或按唤起快捷键弹回。置顶时不吸附。</p>
+        <p class="note">取消置顶后，窗口失去焦点会缩到屏幕边缘只留一枚小把手，鼠标停在把手上或按唤起快捷键弹回。置顶时不吸附。</p>
       </section>
 
       <!-- 7.6 通用 -->

@@ -71,7 +71,7 @@ onMounted(async () => {
         ref="inputRef"
         v-model:value="t.source"
         type="textarea"
-        :autosize="{ minRows: 3, maxRows: 5 }"
+        :autosize="{ minRows: 4, maxRows: 7 }"
         :maxlength="MAX_LEN"
         :disabled="t.status === 'loading'"
         :placeholder="placeholder"

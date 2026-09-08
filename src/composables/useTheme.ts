@@ -33,7 +33,7 @@ export function useTheme() {
     return {
       common: {
         fontFamily: "var(--font-ui)",
-        fontSize: "14px",
+        fontSize: "var(--fs-md)",
         borderRadius: "6px",
         primaryColor: dark ? "#6EA0FF" : "#2F6FED",
         primaryColorHover: dark ? "#86B1FF" : "#4A82F0",

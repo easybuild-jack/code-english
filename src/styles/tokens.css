@@ -57,8 +57,9 @@
   --font-en: var(--font-en-mono);
 }
 
-[data-size="sm"] { --fs-xl: 16px; }
-[data-size="lg"] { --fs-xl: 21px; }
+/* 字号设置缩放整套阶梯，翻译结果始终是最大的那一档 */
+[data-size="sm"] { --fs-xl: 16px; --fs-lg: 14px; --fs-md: 13px; --fs-sm: 12px; --fs-xs: 11px; }
+[data-size="lg"] { --fs-xl: 21px; --fs-lg: 18px; --fs-md: 16px; --fs-sm: 15px; --fs-xs: 13px; }
 
 * { box-sizing: border-box; }
 
