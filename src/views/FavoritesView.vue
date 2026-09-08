@@ -24,7 +24,6 @@ const KINDS: { key: FavoriteKind | "all"; label: string }[] = [
   { key: "all", label: "全部" },
   { key: "word", label: "单词" },
   { key: "phrase", label: "短语" },
-  { key: "sentence", label: "句子" },
 ];
 const kindOptions = KINDS.filter((k) => k.key !== "all").map((k) => ({ label: k.label, value: k.key }));
 
@@ -39,7 +38,7 @@ onMounted(load);
 watch(orderBySeen, load);
 
 const counts = computed(() => {
-  const c: Record<string, number> = { all: 0, word: 0, phrase: 0, sentence: 0 };
+  const c: Record<string, number> = { all: 0, word: 0, phrase: 0 };
   for (const f of all.value) {
     if (f.mastered !== (mastered.value === "done")) continue;
     c.all!++;
@@ -110,7 +109,7 @@ function dateOf(ts: string) {
     </div>
 
     <div class="list">
-      <NEmpty v-if="!list.length" description="这里还是空的，翻译时点 ☆ 收藏" style="margin-top: 48px" />
+      <NEmpty v-if="!list.length" description="这里还是空的，翻译结果里点单词就能收藏" style="margin-top: 48px" />
       <div v-for="f in list" :key="f.id" class="item" @click="expanded = expanded === f.id ? null : f.id">
         <div class="head">
           <span class="text selectable">{{ f.text }}</span>

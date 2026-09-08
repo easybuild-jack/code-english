@@ -45,7 +45,7 @@ pub struct NewHistory {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Favorite {
     pub id: i64,
-    /// word | phrase | sentence
+    /// word | phrase（旧数据可能有 sentence，界面上不再提供）
     pub kind: String,
     pub text: String,
     pub meaning: String,

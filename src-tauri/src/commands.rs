@@ -8,6 +8,7 @@ use crate::db::models::*;
 use crate::db::Db;
 use crate::error::{AppError, AppResult};
 use crate::llm;
+use crate::lookup;
 use crate::translate::{self, TranslationResult};
 use crate::secrets;
 
@@ -117,6 +118,32 @@ pub async fn ask(
         model: resp.model,
         refused,
     })
+}
+
+// ---------- 点词 / 划词 ----------
+
+/// 查翻译结果里某个词或短语在句中的释义。不落库，前端缓存
+#[tauri::command]
+pub async fn lookup_word(
+    db: State<'_, Db>,
+    text: String,
+    context: String,
+    scene: String,
+    provider_id: Option<String>,
+) -> AppResult<lookup::LookupResult> {
+    let text = text.trim().to_string();
+    if text.is_empty() {
+        return Err(AppError::Other("没有选中内容".into()));
+    }
+    if text.chars().count() > 80 || text.split_whitespace().count() > 6 {
+        return Err(AppError::Other("一次只查一个词或短语".into()));
+    }
+
+    let (_cfg, provider) = resolve_provider(&db, provider_id)?;
+    let profile = db.get_profile()?;
+    let req = lookup::build_request(&profile, &scene, &text, &context);
+    let resp = provider.chat(req).await?;
+    Ok(lookup::parse_output(&text, &resp.content))
 }
 
 // ---------- 档案 ----------

@@ -116,7 +116,6 @@ const HOTKEY_LABELS: { key: keyof Hotkeys; label: string; scope: string }[] = [
   { key: "toggleWindow", label: "显示 / 隐藏窗口", scope: "全局" },
   { key: "translate", label: "翻译", scope: "窗口内" },
   { key: "speak", label: "朗读整句", scope: "窗口内" },
-  { key: "favoriteSentence", label: "收藏整句", scope: "窗口内" },
   { key: "nextScene", label: "切换场景", scope: "窗口内" },
   { key: "toggleTheme", label: "切换深浅色", scope: "窗口内" },
 ];

@@ -81,7 +81,14 @@ export interface HistoryItem {
   created_at: string;
 }
 
-export type FavoriteKind = "word" | "phrase" | "sentence";
+export interface LookupResult {
+  text: string;
+  meaning: string;
+  pos: string;
+}
+
+/** 只收单词和短语，句子进历史就够了（旧数据里可能残留 sentence） */
+export type FavoriteKind = "word" | "phrase";
 
 export interface Favorite {
   id: number;
@@ -112,9 +119,5 @@ export interface FavoriteFilter {
 
 /** PRD 6：按词数自动判定收藏类型 */
 export function guessKind(text: string): FavoriteKind {
-  const t = text.trim();
-  const words = t.split(/\s+/).filter(Boolean).length;
-  if (words <= 1) return "word";
-  if (words <= 5 && !/[.!?]$/.test(t)) return "phrase";
-  return "sentence";
+  return text.trim().split(/\s+/).filter(Boolean).length <= 1 ? "word" : "phrase";
 }

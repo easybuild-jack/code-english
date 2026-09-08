@@ -21,7 +21,6 @@ const MAX = 500;
 useHotkeys({
   translate: () => void t.run(),
   speak: () => resultRef.value?.speakAll(),
-  favoriteSentence: () => void resultRef.value?.favoriteAll(),
   nextScene: () => {
     const i = SCENES.findIndex((s) => s.value === t.scene);
     t.scene = SCENES[(i + 1) % SCENES.length]!.value;

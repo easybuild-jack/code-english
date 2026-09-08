@@ -155,7 +155,7 @@ pub fn parse_output(content: &str) -> AppResult<TranslationResult> {
     }
 }
 
-fn strip_code_fence(s: &str) -> &str {
+pub fn strip_code_fence(s: &str) -> &str {
     let s = s.trim();
     if let Some(rest) = s.strip_prefix("```") {
         let rest = rest.trim_start_matches(|c: char| c.is_ascii_alphabetic());

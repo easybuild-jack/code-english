@@ -5,6 +5,7 @@ import type {
   Favorite,
   FavoriteFilter,
   HistoryItem,
+  LookupResult,
   NewFavorite,
   Profile,
   ProviderConfig,
@@ -20,6 +21,8 @@ export const api = {
     invoke<TranslateResponse>("translate", { source, scene, providerId }),
   ask: (messages: ChatMessage[], scene: Scene, providerId?: string) =>
     invoke<AskResponse>("ask", { messages, scene, providerId }),
+  lookup: (text: string, context: string, scene: Scene, providerId?: string) =>
+    invoke<LookupResult>("lookup_word", { text, context, scene, providerId }),
 
   getProfile: () => invoke<Profile>("get_profile"),
   saveProfile: (profile: Profile) => invoke<void>("save_profile", { profile }),

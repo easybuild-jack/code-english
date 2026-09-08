@@ -15,7 +15,6 @@ export interface Hotkeys {
   toggleWindow: string;
   translate: string;
   speak: string;
-  favoriteSentence: string;
   nextScene: string;
   toggleTheme: string;
 }
@@ -28,7 +27,6 @@ export const DEFAULT_HOTKEYS: Hotkeys = {
   // 输入框里 Enter 翻译、Ctrl+Enter 换行（TranslateView 处理换行）
   translate: "Enter",
   speak: "CmdOrCtrl+P",
-  favoriteSentence: "CmdOrCtrl+D",
   nextScene: "CmdOrCtrl+Tab",
   toggleTheme: "CmdOrCtrl+Shift+T",
 };
@@ -79,7 +77,12 @@ export const useSettings = defineStore("settings", () => {
     fontSize.value = saved.fontSize ?? DEFAULTS.fontSize;
     enFont.value = saved.enFont ?? DEFAULTS.enFont;
     inactiveOpacity.value = saved.inactiveOpacity ?? DEFAULTS.inactiveOpacity;
-    hotkeys.value = { ...DEFAULT_HOTKEYS, ...(saved.hotkeys ?? {}) };
+    // 只认当前还存在的快捷键，旧版本存过的（如已删除的「收藏整句」）丢掉
+    const savedHotkeys = (saved.hotkeys ?? {}) as Record<string, string | undefined>;
+    hotkeys.value = { ...DEFAULT_HOTKEYS };
+    for (const k of Object.keys(DEFAULT_HOTKEYS) as (keyof Hotkeys)[]) {
+      if (savedHotkeys[k]) hotkeys.value[k] = savedHotkeys[k]!;
+    }
     // v1 → v2：翻译默认键从 Ctrl+Enter 改为 Enter，只迁移仍是旧默认值的
     if ((saved.version ?? 1) < 2 && hotkeys.value.translate === "CmdOrCtrl+Enter") {
       hotkeys.value.translate = DEFAULT_HOTKEYS.translate;

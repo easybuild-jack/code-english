@@ -3,6 +3,7 @@ mod commands;
 mod db;
 mod error;
 mod llm;
+mod lookup;
 mod secrets;
 mod translate;
 mod tray;
@@ -49,6 +50,7 @@ pub fn run() {
         .invoke_handler(tauri::generate_handler![
             commands::translate,
             commands::ask,
+            commands::lookup_word,
             commands::get_profile,
             commands::save_profile,
             commands::list_providers,

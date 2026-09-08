@@ -10,7 +10,6 @@ import { useDock } from "../stores/dock";
 export interface HotkeyActions {
   translate: () => void;
   speak: () => void;
-  favoriteSentence: () => void;
   nextScene: () => void;
   toggleTheme: () => void;
   hide: () => void;
@@ -87,7 +86,6 @@ export function useHotkeys(actions: HotkeyActions) {
     const table: [string, () => void][] = [
       [h.translate, actions.translate],
       [h.speak, actions.speak],
-      [h.favoriteSentence, actions.favoriteSentence],
       [h.nextScene, actions.nextScene],
       [h.toggleTheme, actions.toggleTheme],
     ];
