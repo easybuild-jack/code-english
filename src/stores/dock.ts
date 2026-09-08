@@ -8,8 +8,12 @@ import { useSettings } from "./settings";
 
 /** 吸附后露在屏幕上的宽度（逻辑像素） */
 export const TAB_WIDTH = 8;
+/** 把手热区的半高（逻辑像素），与 App.vue 里把手的 64px 对应，上下各多留一点 */
+const HANDLE_HALF = 48;
 /** 吸附期间轮询鼠标位置的间隔 */
-const POLL_MS = 150;
+const POLL_MS = 120;
+/** 鼠标要在把手上停留几次轮询才弹回，避免拖滚动条时擦过屏幕边缘误触 */
+const DWELL_POLLS = 3;
 
 export const useDock = defineStore("dock", () => {
   const settings = useSettings();
@@ -40,11 +44,13 @@ export const useDock = defineStore("dock", () => {
       const right = settings.dockEdge === "right";
       const x = right ? areaRight - tab - frame : area.position.x - size.width + tab + frame;
       restorePos = pos;
+      const midY = pos.y + size.height / 2;
+      const half = Math.round(HANDLE_HALF * monitor.scaleFactor);
       tabRect = {
         x1: right ? areaRight - tab : area.position.x,
         x2: right ? areaRight : area.position.x + tab,
-        y1: pos.y,
-        y2: pos.y + size.height,
+        y1: midY - half,
+        y2: midY + half,
       };
       // 吸附期间临时置顶，否则露出的那条边会被别的窗口盖住
       await win.setAlwaysOnTop(true);
@@ -71,13 +77,14 @@ export const useDock = defineStore("dock", () => {
   // 露出的 8px 正好落在无边框窗口的拉伸边框上，网页收不到 mouseenter，只能轮询鼠标位置
   function startPolling() {
     stopPolling();
+    let hits = 0;
     pollTimer = window.setInterval(async () => {
       if (!docked.value || !tabRect) return;
       const c = await cursorPosition().catch(() => null);
       if (!c) return;
-      if (c.x >= tabRect.x1 && c.x <= tabRect.x2 && c.y >= tabRect.y1 && c.y <= tabRect.y2) {
-        void undock();
-      }
+      const inside = c.x >= tabRect.x1 && c.x <= tabRect.x2 && c.y >= tabRect.y1 && c.y <= tabRect.y2;
+      hits = inside ? hits + 1 : 0;
+      if (hits >= DWELL_POLLS) void undock();
     }, POLL_MS);
   }
 

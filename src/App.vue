@@ -84,19 +84,32 @@ onMounted(async () => {
   transition: background-color 120ms, opacity 120ms;
   position: relative;
 }
-/* 吸附时露出的那条边涂成主色，好找。吸附在右侧时露的是窗口左边，反之亦然 */
+/* 吸附时窗口本体隐形，只在露出的 8px 里画一枚小把手。吸附在右侧时露的是窗口左边，反之亦然 */
+.win.docked-right,
+.win.docked-left {
+  background: transparent;
+  border-color: transparent;
+}
+.win.docked-right > *,
+.win.docked-left > * {
+  visibility: hidden;
+}
 .win.docked-right::before,
 .win.docked-left::before {
   content: "";
   position: absolute;
-  top: 0;
-  bottom: 0;
-  width: 8px;
+  top: 50%;
+  width: 5px;
+  height: 64px;
+  transform: translateY(-50%);
+  border-radius: 3px;
   background: var(--accent);
+  opacity: 0.85;
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.25), 0 2px 6px rgba(0, 0, 0, 0.35);
   z-index: 10;
 }
-.win.docked-right::before { left: 0; }
-.win.docked-left::before { right: 0; }
+.win.docked-right::before { left: 2px; }
+.win.docked-left::before { right: 2px; }
 .page {
   flex: 1;
   min-height: 0;
