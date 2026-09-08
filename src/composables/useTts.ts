@@ -1,18 +1,29 @@
 // 朗读：在线词典发音接口，手动点击才读（PRD 7.3）。
-// 有道 dictvoice：type=1 英音，type=2 美音。长文本按句拆开顺序播放。
+// 有道 dictvoice：type=1 英音，type=2 美音。
+// 单词走词典发音（小写）；句子加 le=eng 走长句神经网络语音，连读和语调更自然，并稍微放慢便于跟读。
+// 长文本按句拆开顺序播放。
 
 import { ref } from "vue";
 import { useSettings } from "../stores/settings";
 
 const MAX_CHARS = 200;
+/** 句子播放速率，0.88x 沉稳清晰，适合跟读；单词保持原速 */
+const SENTENCE_RATE = 0.88;
 
 const playing = ref<string | null>(null);
 let current: HTMLAudioElement | null = null;
 let queue: string[] = [];
 
+function isSingleWord(text: string) {
+  return !/\s/.test(text.trim());
+}
+
 function url(text: string, accent: "us" | "uk") {
   const type = accent === "uk" ? 1 : 2;
-  return `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text)}&type=${type}`;
+  if (isSingleWord(text)) {
+    return `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text.trim().toLowerCase())}&type=${type}`;
+  }
+  return `https://dict.youdao.com/dictvoice?audio=${encodeURIComponent(text.trim())}&type=${type}&le=eng`;
 }
 
 function chunk(text: string): string[] {
@@ -50,6 +61,7 @@ export function useTts() {
       return;
     }
     const audio = new Audio(url(next, settings.ttsAccent));
+    if (!isSingleWord(next)) audio.playbackRate = SENTENCE_RATE;
     current = audio;
     audio.onended = () => playNext(key, onError);
     audio.onerror = () => {
