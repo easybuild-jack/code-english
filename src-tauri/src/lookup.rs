@@ -10,13 +10,24 @@ use crate::translate::{scene_label, strip_code_fence};
 #[derive(Debug, Clone, Serialize)]
 pub struct LookupResult {
     pub text: String,
-    /// 结合上下文的中文释义
+    /// 当前例句和用户背景下的准确释义
     pub meaning: String,
+    /// 不适用于当前例句、但常用的其他释义
+    pub other_meanings: Vec<String>,
     /// 词性缩写，如 n. / v. / adj. / phr.；解析失败时为空
     pub pos: String,
+    /// 按全局口音设置返回，不含两侧斜杠
+    pub ipa: String,
 }
 
-pub fn build_request(profile: &Profile, scene: &str, text: &str, context: &str) -> ChatRequest {
+pub fn build_request(
+    profile: &Profile,
+    scene: &str,
+    text: &str,
+    context: &str,
+    source: &str,
+    accent: &str,
+) -> ChatRequest {
     let industry = if profile.industry.trim().is_empty() {
         String::new()
     } else {
@@ -29,20 +40,28 @@ pub fn build_request(profile: &Profile, scene: &str, text: &str, context: &str) 
 {industry}\
 当前场景：{scene}。\n\
 \n\
-请结合所在句子解释这个词或短语。要求：\n\
-1. 先给它在这句话里的意思；如果它还有更常见的其他含义，用分号再补一个，总共不超过 30 个字。\n\
-2. 技术词给程序员圈里通行的中文说法（如 endpoint → 接口 / 端点）。\n\
-3. 不要解释整句，不要举例，不要寒暄。\n\
+请结合用户职业、技术栈、场景、中文原文和完整英文例句解释查询内容。要求：\n\
+1. meaning 只能给查询内容在当前完整例句中的准确含义。必须优先按当前技术语境消歧，例如代码语境中的 class 是“类”，不能是“班级”。\n\
+2. other_meanings 列出不适用于当前例句、但这个词常用的其他中文释义；去重、简短、尽量完整，每项只写一个义项。短语没有其他常见义时返回空数组。\n\
+3. 技术词使用程序员圈通行的中文说法（如 endpoint → 接口 / 端点）。\n\
+4. ipa 返回查询内容的{accent_name} IPA 音标，不要带两侧 / /；短语给出整段连读音标。\n\
+5. 不解释整句，不举例，不寒暄。\n\
 \n\
 只输出一个 JSON 对象，不要输出其他文字，格式：\n\
-{{ \"meaning\": \"<中文释义>\", \"pos\": \"<词性缩写：n. / v. / adj. / adv. / prep. / phr. 等，短语填 phr.>\" }}",
+{{ \"meaning\": \"<当前语境释义>\", \"other_meanings\": [\"<其他常见释义>\"], \"pos\": \"<当前语境词性缩写：n. / v. / adj. / adv. / prep. / phr. 等，短语填 phr.>\", \"ipa\": \"<IPA>\" }}",
         occupation = profile.occupation.trim(),
         stack = profile.tech_stack.trim(),
         industry = industry,
         scene = scene_label(scene),
+        accent_name = if accent == "uk" { "英式" } else { "美式" },
     );
 
-    let user = format!("句子：{}\n查询：{}", context.trim(), text.trim());
+    let user = format!(
+        "中文原文：{}\n完整英文例句：{}\n查询：{}",
+        source.trim(),
+        context.trim(),
+        text.trim()
+    );
 
     ChatRequest {
         system,
@@ -56,7 +75,11 @@ pub fn build_request(profile: &Profile, scene: &str, text: &str, context: &str) 
 struct RawOutput {
     meaning: String,
     #[serde(default)]
+    other_meanings: Vec<String>,
+    #[serde(default)]
     pos: String,
+    #[serde(default)]
+    ipa: String,
 }
 
 /// 解析失败就把原文当释义，不报错——查个词不值得打断用户
@@ -66,12 +89,21 @@ pub fn parse_output(text: &str, content: &str) -> LookupResult {
         Ok(raw) if !raw.meaning.trim().is_empty() => LookupResult {
             text: text.to_string(),
             meaning: raw.meaning.trim().to_string(),
+            other_meanings: raw
+                .other_meanings
+                .into_iter()
+                .map(|v| v.trim().to_string())
+                .filter(|v| !v.is_empty())
+                .collect(),
             pos: raw.pos.trim().to_string(),
+            ipa: raw.ipa.trim().trim_matches('/').to_string(),
         },
         _ => LookupResult {
             text: text.to_string(),
             meaning: cleaned.to_string(),
+            other_meanings: vec![],
             pos: String::new(),
+            ipa: String::new(),
         },
     }
 }
@@ -82,9 +114,14 @@ mod tests {
 
     #[test]
     fn parses_json() {
-        let r = parse_output("endpoint", r#"{"meaning":"接口；端点","pos":"n."}"#);
-        assert_eq!(r.meaning, "接口；端点");
+        let r = parse_output(
+            "class",
+            r#"{"meaning":"类","other_meanings":["班级","阶级","等级"],"pos":"n.","ipa":"klæs"}"#,
+        );
+        assert_eq!(r.meaning, "类");
+        assert_eq!(r.other_meanings, ["班级", "阶级", "等级"]);
         assert_eq!(r.pos, "n.");
+        assert_eq!(r.ipa, "klæs");
     }
 
     #[test]
@@ -92,5 +129,27 @@ mod tests {
         let r = parse_output("endpoint", "接口");
         assert_eq!(r.meaning, "接口");
         assert!(r.pos.is_empty());
+    }
+
+    #[test]
+    fn request_contains_full_context_and_disambiguation_rule() {
+        let profile = Profile {
+            occupation: "程序员".into(),
+            tech_stack: "Java 全栈".into(),
+            industry: "软件开发".into(),
+            default_scene: "work".into(),
+        };
+        let r = build_request(
+            &profile,
+            "work",
+            "class",
+            "Review all the methods in this class.",
+            "检查这个类的所有方法",
+            "us",
+        );
+        assert!(r.system.contains("class 是“类”"));
+        assert!(r.system.contains("美式 IPA"));
+        assert!(r.messages[0].content.contains("检查这个类的所有方法"));
+        assert!(r.messages[0].content.contains("Review all the methods in this class."));
     }
 }

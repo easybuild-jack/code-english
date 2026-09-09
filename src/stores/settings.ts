@@ -9,7 +9,6 @@ export type Theme = "light" | "dark" | "system";
 export type FontSize = "sm" | "md" | "lg";
 export type EnFont = "sans" | "mono";
 export type Accent = "us" | "uk";
-export type DockEdge = "left" | "right";
 
 export interface Hotkeys {
   toggleWindow: string;
@@ -41,8 +40,6 @@ interface Persisted {
   ttsAccent: Accent;
   autostart: boolean;
   alwaysOnTop: boolean;
-  /** 未置顶时失焦吸附到哪一侧 */
-  dockEdge: DockEdge;
 }
 
 const DEFAULTS: Persisted = {
@@ -54,7 +51,6 @@ const DEFAULTS: Persisted = {
   ttsAccent: "us",
   autostart: true,
   alwaysOnTop: true,
-  dockEdge: "right",
 };
 
 const store = new LazyStore("settings.json");
@@ -68,7 +64,6 @@ export const useSettings = defineStore("settings", () => {
   const ttsAccent = ref<Accent>(DEFAULTS.ttsAccent);
   const autostart = ref(DEFAULTS.autostart);
   const alwaysOnTop = ref(DEFAULTS.alwaysOnTop);
-  const dockEdge = ref<DockEdge>(DEFAULTS.dockEdge);
   const loaded = ref(false);
 
   async function load() {
@@ -90,7 +85,6 @@ export const useSettings = defineStore("settings", () => {
     ttsAccent.value = saved.ttsAccent ?? DEFAULTS.ttsAccent;
     autostart.value = saved.autostart ?? DEFAULTS.autostart;
     alwaysOnTop.value = saved.alwaysOnTop ?? DEFAULTS.alwaysOnTop;
-    dockEdge.value = saved.dockEdge ?? DEFAULTS.dockEdge;
     loaded.value = true;
   }
 
@@ -105,14 +99,13 @@ export const useSettings = defineStore("settings", () => {
       ttsAccent: ttsAccent.value,
       autostart: autostart.value,
       alwaysOnTop: alwaysOnTop.value,
-      dockEdge: dockEdge.value,
     };
     await store.set("settings", data);
     await store.save();
   }
 
   watch(
-    [theme, fontSize, enFont, inactiveOpacity, hotkeys, ttsAccent, autostart, alwaysOnTop, dockEdge],
+    [theme, fontSize, enFont, inactiveOpacity, hotkeys, ttsAccent, autostart, alwaysOnTop],
     () => {
       if (loaded.value) void persist();
     },
@@ -137,7 +130,6 @@ export const useSettings = defineStore("settings", () => {
     ttsAccent,
     autostart,
     alwaysOnTop,
-    dockEdge,
     loaded,
     load,
     toggleTheme,

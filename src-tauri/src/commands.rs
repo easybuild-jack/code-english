@@ -128,7 +128,9 @@ pub async fn lookup_word(
     db: State<'_, Db>,
     text: String,
     context: String,
+    source: String,
     scene: String,
+    accent: String,
     provider_id: Option<String>,
 ) -> AppResult<lookup::LookupResult> {
     let text = text.trim().to_string();
@@ -138,10 +140,13 @@ pub async fn lookup_word(
     if text.chars().count() > 80 || text.split_whitespace().count() > 6 {
         return Err(AppError::Other("一次只查一个词或短语".into()));
     }
+    if accent != "us" && accent != "uk" {
+        return Err(AppError::Other("不支持的发音类型".into()));
+    }
 
     let (_cfg, provider) = resolve_provider(&db, provider_id)?;
     let profile = db.get_profile()?;
-    let req = lookup::build_request(&profile, &scene, &text, &context);
+    let req = lookup::build_request(&profile, &scene, &text, &context, &source, &accent);
     let resp = provider.chat(req).await?;
     Ok(lookup::parse_output(&text, &resp.content))
 }

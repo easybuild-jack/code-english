@@ -213,7 +213,14 @@ impl Db {
                 .query_row("SELECT id FROM favorites WHERE text_lower = ?1", [&lower], |r| r.get(0))
                 .optional()?;
             if let Some(id) = existing {
-                c.execute("UPDATE favorites SET seen_count = seen_count + 1 WHERE id = ?1", [id])?;
+                c.execute(
+                    "UPDATE favorites SET
+                       seen_count = seen_count + 1,
+                       meaning = CASE WHEN ?2 <> '' THEN ?2 ELSE meaning END,
+                       example = CASE WHEN ?3 <> '' THEN ?3 ELSE example END
+                     WHERE id = ?1",
+                    params![id, f.meaning, f.example],
+                )?;
                 return Ok((id, false));
             }
             c.execute(

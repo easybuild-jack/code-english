@@ -5,7 +5,6 @@ import { onMounted, onUnmounted, watch } from "vue";
 import { register, unregisterAll } from "@tauri-apps/plugin-global-shortcut";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { useSettings } from "../stores/settings";
-import { useDock } from "../stores/dock";
 
 export interface HotkeyActions {
   translate: () => void;
@@ -50,7 +49,6 @@ export function pretty(combo: string): string {
 
 export function useHotkeys(actions: HotkeyActions) {
   const settings = useSettings();
-  const dock = useDock();
   const win = getCurrentWindow();
 
   async function registerGlobal() {
@@ -58,9 +56,7 @@ export function useHotkeys(actions: HotkeyActions) {
     try {
       await register(settings.hotkeys.toggleWindow, async (event) => {
         if (event.state !== "Pressed") return;
-        if (dock.docked) {
-          await dock.undock();
-        } else if (await win.isVisible()) {
+        if (await win.isVisible()) {
           await win.hide();
         } else {
           await win.show();

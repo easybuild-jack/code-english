@@ -211,7 +211,7 @@ defineExpose({
         v-if="card"
         :text="card.text"
         :context="card.context"
-        :keywords="t.result.keywords"
+        :source="t.source"
         :x="card.x"
         :y="card.y"
         @close="card = null"

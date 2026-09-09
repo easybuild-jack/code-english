@@ -7,7 +7,6 @@ defineEmits<{ navigate: [page: Page] }>();
 const tabs: { key: Page; label: string }[] = [
   { key: "translate", label: "翻译" },
   { key: "history", label: "历史" },
-  { key: "favorites", label: "收藏" },
   { key: "settings", label: "设置" },
 ];
 </script>

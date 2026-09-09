@@ -84,7 +84,10 @@ export interface HistoryItem {
 export interface LookupResult {
   text: string;
   meaning: string;
+  other_meanings: string[];
   pos: string;
+  /** 跟随全局美音 / 英音设置返回的 IPA */
+  ipa: string;
 }
 
 /** 只收单词和短语，句子进历史就够了（旧数据里可能残留 sentence） */

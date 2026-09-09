@@ -35,10 +35,6 @@ const ACCENT_OPTS = [
   { value: "us", label: "美音" },
   { value: "uk", label: "英音" },
 ] as const;
-const DOCK_OPTS = [
-  { value: "right", label: "屏幕右侧" },
-  { value: "left", label: "屏幕左侧" },
-] as const;
 const SCENE_OPTS = SCENES.map((s) => ({ value: s.value, label: s.label }));
 
 const emit = defineEmits<{ back: [] }>();
@@ -281,11 +277,6 @@ onMounted(async () => {
           失焦时透明度 {{ settings.inactiveOpacity }}%
           <NSlider v-model:value="settings.inactiveOpacity" :min="60" :max="100" :step="5" />
         </label>
-        <label>
-          未置顶时失焦吸附到
-          <Segmented v-model="settings.dockEdge" :options="DOCK_OPTS" />
-        </label>
-        <p class="note">取消置顶后，窗口失去焦点会缩到屏幕边缘只留一枚小把手，鼠标停在把手上或按唤起快捷键弹回。置顶时不吸附。</p>
       </section>
 
       <!-- 7.6 通用 -->
