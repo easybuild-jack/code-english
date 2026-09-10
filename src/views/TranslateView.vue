@@ -33,7 +33,7 @@ useHotkeys({
 const placeholder = computed(() =>
   t.mode === "ask"
     ? `问一个英语学习的问题，${pretty(settings.hotkeys.translate)} 发送`
-    : `输入中文，${pretty(settings.hotkeys.translate)} 翻译`,
+    : `输入中文或英文，${pretty(settings.hotkeys.translate)} 翻译`,
 );
 const MAX_LEN = computed(() => (t.mode === "ask" ? 1000 : MAX));
 

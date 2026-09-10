@@ -3,6 +3,7 @@
 use crate::error::AppResult;
 
 const SERVICE: &str = "com.jackliu.codeenglish";
+const FAVORITE_SYNC_TOKEN_ID: &str = "favorite-sync-token";
 
 fn entry(provider_id: &str) -> AppResult<keyring::Entry> {
     Ok(keyring::Entry::new(SERVICE, provider_id)?)
@@ -32,4 +33,16 @@ pub fn get_api_key(provider_id: &str) -> AppResult<Option<String>> {
 
 pub fn has_api_key(provider_id: &str) -> bool {
     matches!(get_api_key(provider_id), Ok(Some(k)) if !k.is_empty())
+}
+
+pub fn set_sync_token(token: &str) -> AppResult<()> {
+    set_api_key(FAVORITE_SYNC_TOKEN_ID, token)
+}
+
+pub fn get_sync_token() -> AppResult<Option<String>> {
+    get_api_key(FAVORITE_SYNC_TOKEN_ID)
+}
+
+pub fn has_sync_token() -> bool {
+    has_api_key(FAVORITE_SYNC_TOKEN_ID)
 }

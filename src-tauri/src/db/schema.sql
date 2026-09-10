@@ -52,18 +52,23 @@ CREATE INDEX IF NOT EXISTS idx_history_created ON translation_history (created_a
 UPDATE translation_history SET scene = 'work'
 WHERE scene NOT IN ('work', 'workplace', 'daily', 'shopping', 'travel');
 
--- 收藏：单词 / 短语 / 句子
+-- 收藏：只保存单词 / 短语及其完整释义、音标，不保存所在翻译句子
 CREATE TABLE IF NOT EXISTS favorites (
     id           INTEGER PRIMARY KEY AUTOINCREMENT,
     kind         TEXT NOT NULL,                           -- word | phrase | sentence
     text         TEXT NOT NULL,
     text_lower   TEXT NOT NULL,                           -- 去重与统计用
     meaning      TEXT NOT NULL DEFAULT '',
+    ipa          TEXT NOT NULL DEFAULT '',
+    accent       TEXT NOT NULL DEFAULT 'us',              -- us | uk
+    synced       INTEGER NOT NULL DEFAULT 0,               -- 仅 word 使用：0 待同步，1 已同步
     domain       TEXT NOT NULL DEFAULT '',
-    example      TEXT NOT NULL DEFAULT '',
+    example      TEXT NOT NULL DEFAULT '',                -- 已弃用，保留列避免迁移
     seen_count   INTEGER NOT NULL DEFAULT 0,              -- 在翻译历史中出现的次数
     mastered     INTEGER NOT NULL DEFAULT 0,
     created_at   TEXT NOT NULL DEFAULT (datetime('now', 'localtime')),
     UNIQUE (text_lower)
 );
 CREATE INDEX IF NOT EXISTS idx_fav_kind ON favorites (kind, mastered);
+DELETE FROM favorites WHERE kind = 'sentence';
+UPDATE favorites SET example = '' WHERE example <> '';

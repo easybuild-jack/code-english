@@ -40,6 +40,7 @@ interface Persisted {
   ttsAccent: Accent;
   autostart: boolean;
   alwaysOnTop: boolean;
+  syncBaseUrl: string;
 }
 
 const DEFAULTS: Persisted = {
@@ -51,6 +52,7 @@ const DEFAULTS: Persisted = {
   ttsAccent: "us",
   autostart: true,
   alwaysOnTop: true,
+  syncBaseUrl: "",
 };
 
 const store = new LazyStore("settings.json");
@@ -64,6 +66,7 @@ export const useSettings = defineStore("settings", () => {
   const ttsAccent = ref<Accent>(DEFAULTS.ttsAccent);
   const autostart = ref(DEFAULTS.autostart);
   const alwaysOnTop = ref(DEFAULTS.alwaysOnTop);
+  const syncBaseUrl = ref(DEFAULTS.syncBaseUrl);
   const loaded = ref(false);
 
   async function load() {
@@ -85,6 +88,7 @@ export const useSettings = defineStore("settings", () => {
     ttsAccent.value = saved.ttsAccent ?? DEFAULTS.ttsAccent;
     autostart.value = saved.autostart ?? DEFAULTS.autostart;
     alwaysOnTop.value = saved.alwaysOnTop ?? DEFAULTS.alwaysOnTop;
+    syncBaseUrl.value = saved.syncBaseUrl ?? DEFAULTS.syncBaseUrl;
     loaded.value = true;
   }
 
@@ -99,13 +103,14 @@ export const useSettings = defineStore("settings", () => {
       ttsAccent: ttsAccent.value,
       autostart: autostart.value,
       alwaysOnTop: alwaysOnTop.value,
+      syncBaseUrl: syncBaseUrl.value,
     };
     await store.set("settings", data);
     await store.save();
   }
 
   watch(
-    [theme, fontSize, enFont, inactiveOpacity, hotkeys, ttsAccent, autostart, alwaysOnTop],
+    [theme, fontSize, enFont, inactiveOpacity, hotkeys, ttsAccent, autostart, alwaysOnTop, syncBaseUrl],
     () => {
       if (loaded.value) void persist();
     },
@@ -130,6 +135,7 @@ export const useSettings = defineStore("settings", () => {
     ttsAccent,
     autostart,
     alwaysOnTop,
+    syncBaseUrl,
     loaded,
     load,
     toggleTheme,

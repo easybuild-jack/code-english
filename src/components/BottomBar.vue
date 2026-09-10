@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import type { Component } from "vue";
+import { Languages, Star, History, Settings } from "lucide-vue-next";
 import type { Page } from "../App.vue";
 
 defineProps<{ page: Page }>();
 defineEmits<{ navigate: [page: Page] }>();
 
-const tabs: { key: Page; label: string }[] = [
-  { key: "translate", label: "翻译" },
-  { key: "history", label: "历史" },
-  { key: "settings", label: "设置" },
+const tabs: { key: Page; label: string; icon: Component }[] = [
+  { key: "translate", label: "翻译", icon: Languages },
+  { key: "favorites", label: "收藏", icon: Star },
+  { key: "history", label: "历史", icon: History },
+  { key: "settings", label: "设置", icon: Settings },
 ];
 </script>
 
@@ -20,7 +23,8 @@ const tabs: { key: Page; label: string }[] = [
       :class="{ active: page === tab.key }"
       @click="$emit('navigate', tab.key)"
     >
-      {{ tab.label }}
+      <component :is="tab.icon" :size="15" :stroke-width="1.75" />
+      <span>{{ tab.label }}</span>
     </button>
   </nav>
 </template>
@@ -35,12 +39,17 @@ const tabs: { key: Page; label: string }[] = [
   border-top: 1px solid var(--border);
 }
 .tab {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
   border: 0;
   background: transparent;
   color: var(--text-2);
   font: inherit;
   font-size: var(--fs-sm);
-  padding: 6px 12px;
+  padding: 6px 4px;
   border-radius: var(--r-ctl);
   cursor: pointer;
   transition: background-color 120ms, color 120ms;

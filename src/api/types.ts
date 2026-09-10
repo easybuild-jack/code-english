@@ -90,7 +90,7 @@ export interface LookupResult {
   ipa: string;
 }
 
-/** 只收单词和短语，句子进历史就够了（旧数据里可能残留 sentence） */
+/** 只收藏单词和短语 */
 export type FavoriteKind = "word" | "phrase";
 
 export interface Favorite {
@@ -98,10 +98,9 @@ export interface Favorite {
   kind: FavoriteKind;
   text: string;
   meaning: string;
-  domain: string;
-  example: string;
+  ipa: string;
+  accent: "us" | "uk";
   seen_count: number;
-  mastered: boolean;
   created_at: string;
 }
 
@@ -109,15 +108,8 @@ export interface NewFavorite {
   kind: FavoriteKind;
   text: string;
   meaning?: string;
-  domain?: string;
-  example?: string;
-}
-
-export interface FavoriteFilter {
-  kind?: FavoriteKind;
-  mastered?: boolean;
-  query?: string;
-  order_by_seen?: boolean;
+  ipa?: string;
+  accent?: "us" | "uk";
 }
 
 /** PRD 6：按词数自动判定收藏类型 */

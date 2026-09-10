@@ -3,7 +3,6 @@ import type {
   AskResponse,
   ChatMessage,
   Favorite,
-  FavoriteFilter,
   HistoryItem,
   LookupResult,
   NewFavorite,
@@ -39,10 +38,12 @@ export const api = {
 
   addFavorite: (favorite: NewFavorite) =>
     invoke<{ id: number; created: boolean }>("add_favorite", { favorite }),
-  listFavorites: (filter?: FavoriteFilter) => invoke<Favorite[]>("list_favorites", { filter }),
-  updateFavorite: (favorite: Favorite) => invoke<void>("update_favorite", { favorite }),
+  listFavorites: () => invoke<Favorite[]>("list_favorites"),
   deleteFavorite: (id: number) => invoke<void>("delete_favorite", { id }),
   favoriteLookup: () => invoke<[string, number][]>("favorite_lookup"),
+  saveSyncToken: (token: string) => invoke<void>("save_sync_token", { token }),
+  hasSyncToken: () => invoke<boolean>("has_sync_token"),
+  syncFavorites: (baseUrl: string) => invoke<void>("sync_favorites", { baseUrl }),
 
   dataDir: () => invoke<string>("data_dir"),
   exportData: () => invoke<string>("export_data"),

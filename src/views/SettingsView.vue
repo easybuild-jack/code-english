@@ -151,8 +151,57 @@ async function exportData() {
   }
 }
 
+// ---- 收藏同步 ----
+const syncBaseInput = ref("");
+const syncTokenInput = ref("");
+const hasSyncToken = ref(false);
+const savingSync = ref(false);
+
+function normalizeSyncBaseUrl(value: string) {
+  const url = new URL(value.trim());
+  if (!["http:", "https:"].includes(url.protocol) || !url.hostname || url.username || url.password) {
+    throw new Error("请输入不含账号密码的 http 或 https 服务地址");
+  }
+  return url.origin;
+}
+
+async function saveSyncConfig() {
+  savingSync.value = true;
+  try {
+    if (!syncBaseInput.value.trim()) {
+      await api.saveSyncToken("");
+      settings.syncBaseUrl = "";
+      syncTokenInput.value = "";
+      hasSyncToken.value = false;
+      message.success("已关闭收藏同步");
+      return;
+    }
+
+    const baseUrl = normalizeSyncBaseUrl(syncBaseInput.value);
+    if (!syncTokenInput.value.trim() && !hasSyncToken.value) {
+      message.error("配置同步服务地址时必须填写令牌");
+      return;
+    }
+    if (syncTokenInput.value.trim()) {
+      await api.saveSyncToken(syncTokenInput.value);
+      hasSyncToken.value = true;
+      syncTokenInput.value = "";
+    }
+    syncBaseInput.value = baseUrl;
+    settings.syncBaseUrl = baseUrl;
+    message.success("收藏同步已启用");
+    void api.syncFavorites(baseUrl).catch(() => {});
+  } catch (e) {
+    message.error(e instanceof Error ? e.message : String(e));
+  } finally {
+    savingSync.value = false;
+  }
+}
+
 onMounted(async () => {
-  await Promise.all([loadProfile(), loadProviders()]);
+  const [, , tokenConfigured] = await Promise.all([loadProfile(), loadProviders(), api.hasSyncToken()]);
+  syncBaseInput.value = settings.syncBaseUrl;
+  hasSyncToken.value = tokenConfigured;
   dataDir.value = await api.dataDir();
   window.addEventListener("keydown", onRecord);
 });
@@ -277,6 +326,28 @@ onMounted(async () => {
           失焦时透明度 {{ settings.inactiveOpacity }}%
           <NSlider v-model:value="settings.inactiveOpacity" :min="60" :max="100" :step="5" />
         </label>
+      </section>
+
+      <section>
+        <h3>收藏同步</h3>
+        <label>
+          服务地址
+          <NInput v-model:value="syncBaseInput" size="small" placeholder="例如 http://localhost:3000" />
+        </label>
+        <label>
+          令牌
+          <NInput
+            v-model:value="syncTokenInput"
+            type="password"
+            show-password-on="click"
+            size="small"
+            :placeholder="hasSyncToken ? '已保存，留空则不修改' : 'Bearer Token'"
+          />
+        </label>
+        <NButton size="tiny" type="primary" :loading="savingSync" @click="saveSyncConfig">保存同步配置</NButton>
+        <p class="note">
+          {{ settings.syncBaseUrl && hasSyncToken ? "已启用，仅静默上传收藏的单词" : "未启用" }}。接口固定为 /api/words/collect；清空服务地址并保存可关闭同步。
+        </p>
       </section>
 
       <!-- 7.6 通用 -->

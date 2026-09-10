@@ -1,8 +1,8 @@
 //! 无边框窗口的系统级外观。
 //!
-//! Windows 上 `decorations: false` + `shadow: true` 会让 DWM 按矩形画阴影和 1px 描边，
-//! 与前端 CSS 的圆角对不上，四角露出直角线。这里请 DWM 直接把窗口裁成圆角并隐藏描边，
-//! 阴影随之变成圆角。仅 Windows 11 生效，Windows 10 调用会被忽略，不报错。
+//! Windows 上无边框窗口仍可能带 DWM 描边，与前端 CSS 圆角叠加后在四角露线。
+//! tauri.conf 已关闭原生阴影；这里继续让 DWM 裁成圆角并隐藏系统描边。
+//! 仅 Windows 11 生效，Windows 10 调用会被忽略，不报错。
 
 use tauri::WebviewWindow;
 

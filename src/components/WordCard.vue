@@ -17,7 +17,7 @@ import { useTts } from "../composables/useTts";
 
 const props = defineProps<{
   text: string;
-  /** 所在句子，作为查词上下文和收藏例句 */
+  /** 所在句子，只作为查词上下文，不写入收藏 */
   context: string;
   /** 生成当前英文句子的中文原文 */
   source: string;
@@ -68,9 +68,13 @@ async function favorite() {
       kind: guessKind(props.text),
       text: props.text,
       meaning: meanings,
-      example: props.context,
+      ipa: result.value?.ipa ?? "",
+      accent: settings.ttsAccent,
     });
     message.success(r.created ? "已收藏" : "已收藏过，次数 +1");
+    if (settings.syncBaseUrl) {
+      void api.syncFavorites(settings.syncBaseUrl).catch(() => {});
+    }
     await t.refreshFavoriteLookup();
   } catch (e) {
     message.error(String(e));

@@ -22,6 +22,9 @@ impl Db {
         let path = dir.join("codeenglish.db");
         let conn = Connection::open(&path)?;
         conn.execute_batch(SCHEMA)?;
+        ensure_column(&conn, "favorites", "ipa", "TEXT NOT NULL DEFAULT ''")?;
+        ensure_column(&conn, "favorites", "accent", "TEXT NOT NULL DEFAULT 'us'")?;
+        ensure_column(&conn, "favorites", "synced", "INTEGER NOT NULL DEFAULT 0")?;
         Ok(Self {
             conn: Mutex::new(conn),
             path,
@@ -217,63 +220,43 @@ impl Db {
                     "UPDATE favorites SET
                        seen_count = seen_count + 1,
                        meaning = CASE WHEN ?2 <> '' THEN ?2 ELSE meaning END,
-                       example = CASE WHEN ?3 <> '' THEN ?3 ELSE example END
+                       ipa = CASE WHEN ?3 <> '' THEN ?3 ELSE ipa END,
+                       accent = CASE WHEN ?4 <> '' THEN ?4 ELSE accent END
                      WHERE id = ?1",
-                    params![id, f.meaning, f.example],
+                    params![id, f.meaning, f.ipa, f.accent],
                 )?;
                 return Ok((id, false));
             }
             c.execute(
-                "INSERT INTO favorites (kind, text, text_lower, meaning, domain, example, seen_count)
+                "INSERT INTO favorites (kind, text, text_lower, meaning, ipa, accent, seen_count)
                  VALUES (?1, ?2, ?3, ?4, ?5, ?6, 1)",
-                params![f.kind, f.text.trim(), lower, f.meaning, f.domain, f.example],
+                params![f.kind, f.text.trim(), lower, f.meaning, f.ipa, f.accent],
             )?;
             Ok((c.last_insert_rowid(), true))
         })
     }
 
-    pub fn list_favorites(&self, filter: &FavoriteFilter) -> AppResult<Vec<Favorite>> {
+    pub fn list_favorites(&self) -> AppResult<Vec<Favorite>> {
         self.with(|c| {
-            let like = filter
-                .query
-                .as_deref()
-                .filter(|q| !q.trim().is_empty())
-                .map(|q| format!("%{}%", q.trim()));
-            let order = if filter.order_by_seen { "seen_count DESC, created_at DESC" } else { "created_at DESC" };
-            let sql = format!(
-                "SELECT id, kind, text, meaning, domain, example, seen_count, mastered, created_at
+            let mut stmt = c.prepare(
+                "SELECT id, kind, text, meaning, ipa, accent, seen_count, created_at
                  FROM favorites
-                 WHERE (?1 IS NULL OR kind = ?1)
-                   AND (?2 IS NULL OR mastered = ?2)
-                   AND (?3 IS NULL OR text LIKE ?3 OR meaning LIKE ?3)
-                 ORDER BY {order}"
-            );
-            let mut stmt = c.prepare(&sql)?;
-            let mastered = filter.mastered.map(|m| m as i64);
-            let rows = stmt.query_map(params![filter.kind, mastered, like], |r| {
+                 WHERE kind IN ('word', 'phrase')
+                 ORDER BY created_at DESC"
+            )?;
+            let rows = stmt.query_map([], |r| {
                 Ok(Favorite {
                     id: r.get(0)?,
                     kind: r.get(1)?,
                     text: r.get(2)?,
                     meaning: r.get(3)?,
-                    domain: r.get(4)?,
-                    example: r.get(5)?,
+                    ipa: r.get(4)?,
+                    accent: r.get(5)?,
                     seen_count: r.get(6)?,
-                    mastered: r.get::<_, i64>(7)? != 0,
-                    created_at: r.get(8)?,
+                    created_at: r.get(7)?,
                 })
             })?;
             Ok(rows.collect::<Result<_, _>>()?)
-        })
-    }
-
-    pub fn update_favorite(&self, f: &Favorite) -> AppResult<()> {
-        self.with(|c| {
-            c.execute(
-                "UPDATE favorites SET kind=?1, meaning=?2, domain=?3, example=?4, mastered=?5 WHERE id=?6",
-                params![f.kind, f.meaning, f.domain, f.example, f.mastered as i64, f.id],
-            )?;
-            Ok(())
         })
     }
 
@@ -312,11 +295,38 @@ impl Db {
         })
     }
 
+    pub fn unsynced_words(&self, limit: i64) -> AppResult<Vec<String>> {
+        self.with(|c| {
+            let mut stmt = c.prepare(
+                "SELECT text_lower FROM favorites
+                 WHERE kind = 'word' AND synced = 0
+                 ORDER BY id
+                 LIMIT ?1",
+            )?;
+            let rows = stmt.query_map([limit], |r| r.get(0))?;
+            Ok(rows.collect::<Result<_, _>>()?)
+        })
+    }
+
+    pub fn mark_words_synced(&self, words: &[String]) -> AppResult<usize> {
+        self.with(|c| {
+            let mut changed = 0;
+            for word in words {
+                changed += c.execute(
+                    "UPDATE favorites SET synced = 1
+                     WHERE kind = 'word' AND text_lower = ?1",
+                    [word.trim().to_lowercase()],
+                )?;
+            }
+            Ok(changed)
+        })
+    }
+
     // ---------- export ----------
 
     pub fn export_json(&self) -> AppResult<serde_json::Value> {
         let history = self.list_history(None, i64::MAX, 0)?;
-        let favorites = self.list_favorites(&FavoriteFilter::default())?;
+        let favorites = self.list_favorites()?;
         let profile = self.get_profile()?;
         Ok(serde_json::json!({
             "exported_at": chrono::Local::now().to_rfc3339(),
@@ -325,6 +335,18 @@ impl Db {
             "favorites": favorites,
         }))
     }
+}
+
+fn ensure_column(conn: &Connection, table: &str, column: &str, definition: &str) -> AppResult<()> {
+    let exists: bool = conn.query_row(
+        &format!("SELECT EXISTS(SELECT 1 FROM pragma_table_info('{table}') WHERE name = ?1)"),
+        [column],
+        |r| r.get(0),
+    )?;
+    if !exists {
+        conn.execute_batch(&format!("ALTER TABLE {table} ADD COLUMN {column} {definition}"))?;
+    }
+    Ok(())
 }
 
 /// 整词匹配：needle 前后必须是非字母数字或字符串边界
@@ -351,12 +373,49 @@ fn contains_whole(haystack: &str, needle: &str) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use super::contains_whole;
+    use super::{contains_whole, Db};
+    use crate::db::models::NewFavorite;
 
     #[test]
     fn whole_word_matching() {
         assert!(contains_whole("make this endpoint paginated.", "endpoint"));
         assert!(!contains_whole("these endpoints are fine", "endpoint"));
         assert!(contains_whole("add a global exception handler.", "global exception handler"));
+    }
+
+    #[test]
+    fn sync_queue_only_contains_unsynced_words() {
+        let dir = std::env::temp_dir().join(format!(
+            "codeenglish-sync-test-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        {
+            let db = Db::open(&dir).unwrap();
+            db.add_favorite(&NewFavorite {
+                kind: "word".into(),
+                text: "Resilient".into(),
+                meaning: "有韧性的".into(),
+                ipa: "rɪˈzɪliənt".into(),
+                accent: "us".into(),
+            })
+            .unwrap();
+            db.add_favorite(&NewFavorite {
+                kind: "phrase".into(),
+                text: "take over".into(),
+                meaning: "接管".into(),
+                ipa: String::new(),
+                accent: "us".into(),
+            })
+            .unwrap();
+
+            assert_eq!(db.unsynced_words(50).unwrap(), ["resilient"]);
+            db.mark_words_synced(&["resilient".into()]).unwrap();
+            assert!(db.unsynced_words(50).unwrap().is_empty());
+        }
+        let _ = std::fs::remove_dir_all(dir);
     }
 }

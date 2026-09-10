@@ -11,6 +11,7 @@ use crate::llm;
 use crate::lookup;
 use crate::translate::{self, TranslationResult};
 use crate::secrets;
+use crate::sync;
 
 // ---------- 翻译 ----------
 
@@ -239,13 +240,8 @@ pub fn add_favorite(db: State<'_, Db>, favorite: NewFavorite) -> AppResult<AddFa
 }
 
 #[tauri::command]
-pub fn list_favorites(db: State<'_, Db>, filter: Option<FavoriteFilter>) -> AppResult<Vec<Favorite>> {
-    db.list_favorites(&filter.unwrap_or_default())
-}
-
-#[tauri::command]
-pub fn update_favorite(db: State<'_, Db>, favorite: Favorite) -> AppResult<()> {
-    db.update_favorite(&favorite)
+pub fn list_favorites(db: State<'_, Db>) -> AppResult<Vec<Favorite>> {
+    db.list_favorites()
 }
 
 #[tauri::command]
@@ -257,6 +253,21 @@ pub fn delete_favorite(db: State<'_, Db>, id: i64) -> AppResult<()> {
 #[tauri::command]
 pub fn favorite_lookup(db: State<'_, Db>) -> AppResult<Vec<(String, i64)>> {
     db.favorite_lookup()
+}
+
+#[tauri::command]
+pub fn save_sync_token(token: String) -> AppResult<()> {
+    secrets::set_sync_token(&token)
+}
+
+#[tauri::command]
+pub fn has_sync_token() -> bool {
+    secrets::has_sync_token()
+}
+
+#[tauri::command]
+pub async fn sync_favorites(db: State<'_, Db>, base_url: String) -> AppResult<()> {
+    sync::run(&db, &base_url).await
 }
 
 // ---------- 数据 ----------

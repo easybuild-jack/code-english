@@ -5,6 +5,7 @@ mod error;
 mod llm;
 mod lookup;
 mod secrets;
+mod sync;
 mod translate;
 mod tray;
 mod window_style;
@@ -61,9 +62,11 @@ pub fn run() {
             commands::clear_history,
             commands::add_favorite,
             commands::list_favorites,
-            commands::update_favorite,
             commands::delete_favorite,
             commands::favorite_lookup,
+            commands::save_sync_token,
+            commands::has_sync_token,
+            commands::sync_favorites,
             commands::data_dir,
             commands::export_data,
         ])

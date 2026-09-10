@@ -45,14 +45,14 @@ pub struct NewHistory {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Favorite {
     pub id: i64,
-    /// word | phrase（旧数据可能有 sentence，界面上不再提供）
+    /// word | phrase
     pub kind: String,
     pub text: String,
     pub meaning: String,
-    pub domain: String,
-    pub example: String,
+    pub ipa: String,
+    /// us | uk
+    pub accent: String,
     pub seen_count: i64,
-    pub mastered: bool,
     pub created_at: String,
 }
 
@@ -63,16 +63,7 @@ pub struct NewFavorite {
     #[serde(default)]
     pub meaning: String,
     #[serde(default)]
-    pub domain: String,
+    pub ipa: String,
     #[serde(default)]
-    pub example: String,
-}
-
-#[derive(Debug, Clone, Default, Deserialize)]
-pub struct FavoriteFilter {
-    pub kind: Option<String>,
-    pub mastered: Option<bool>,
-    pub query: Option<String>,
-    #[serde(default)]
-    pub order_by_seen: bool,
+    pub accent: String,
 }
