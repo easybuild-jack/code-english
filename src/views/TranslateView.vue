@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { NInput } from "naive-ui";
+import { NButton, NInput, useMessage } from "naive-ui";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { SCENES } from "../api";
 import { useTranslate } from "../stores/translate";
@@ -12,6 +12,7 @@ const emit = defineEmits<{ openSettings: [] }>();
 
 const t = useTranslate();
 const settings = useSettings();
+const message = useMessage();
 const win = getCurrentWindow();
 const resultRef = ref<InstanceType<typeof ResultArea> | null>(null);
 const inputRef = ref<InstanceType<typeof NInput> | null>(null);
@@ -29,19 +30,27 @@ useHotkeys({
   hide: () => void win.hide(),
 });
 
-/** 翻译键是 Enter 时，Ctrl+Enter 换行；翻译键带修饰键时，Enter 本身就是换行 */
-const translateIsEnter = computed(() => settings.hotkeys.translate === "Enter");
-const verb = computed(() => (t.mode === "ask" ? "发送" : "翻译"));
-const hint = computed(() => {
-  const tr = pretty(settings.hotkeys.translate);
-  return translateIsEnter.value ? `${tr} ${verb.value} · ${pretty("CmdOrCtrl+Enter")} 换行` : `${tr} ${verb.value}`;
-});
 const placeholder = computed(() =>
   t.mode === "ask"
     ? `问一个英语学习的问题，${pretty(settings.hotkeys.translate)} 发送`
     : `输入中文，${pretty(settings.hotkeys.translate)} 翻译`,
 );
 const MAX_LEN = computed(() => (t.mode === "ask" ? 1000 : MAX));
+
+async function copyInput() {
+  if (!t.source) return;
+  try {
+    await navigator.clipboard.writeText(t.source);
+    message.success("已复制");
+  } catch {
+    message.error("复制失败");
+  }
+}
+
+function clearInput() {
+  t.source = "";
+  inputRef.value?.focus();
+}
 
 function onInputKeydown(e: KeyboardEvent) {
   if (e.isComposing || e.key !== "Enter" || !(e.ctrlKey || e.metaKey)) return;
@@ -77,11 +86,15 @@ onMounted(async () => {
         class="input"
         @keydown="onInputKeydown"
       />
-      <span class="hint">
+      <span v-if="t.status === 'loading' || t.source.length >= MAX_LEN" class="hint">
         <template v-if="t.status === 'loading'">{{ t.mode === "ask" ? "思考中…" : "翻译中…" }}</template>
-        <template v-else-if="t.source.length >= MAX_LEN">太长了，精简一下</template>
-        <template v-else>{{ hint }}</template>
+        <template v-else>太长了，精简一下</template>
       </span>
+      <div v-else class="input-actions">
+        <NButton text type="primary" size="tiny" :disabled="!t.canTranslate" @click="t.run">发送</NButton>
+        <NButton text size="tiny" :disabled="!t.source" @click="copyInput">复制</NButton>
+        <NButton text size="tiny" :disabled="!t.source" @click="clearInput">清除</NButton>
+      </div>
     </div>
     <ResultArea ref="resultRef" @open-settings="emit('openSettings')" />
   </div>
@@ -106,5 +119,13 @@ onMounted(async () => {
   font-size: var(--fs-xs);
   color: var(--text-3);
   pointer-events: none;
+}
+.input-actions {
+  position: absolute;
+  right: 28px;
+  bottom: 7px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 </style>

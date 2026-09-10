@@ -8,8 +8,8 @@ import { ref } from "vue";
 import { useSettings } from "../stores/settings";
 
 const MAX_CHARS = 200;
-/** 句子播放速率，0.88x 沉稳清晰，适合跟读；单词保持原速 */
-const SENTENCE_RATE = 0.88;
+/** 句子播放速率，0.75x 更适合逐词听辨和跟读；单词保持原速 */
+const SENTENCE_RATE = 0.75;
 
 const playing = ref<string | null>(null);
 let current: HTMLAudioElement | null = null;

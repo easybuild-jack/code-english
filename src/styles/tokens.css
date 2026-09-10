@@ -10,8 +10,6 @@
   --text-3: #9aa0a8;
   --accent: #2f6fed;
   --accent-bg: #eaf1fe;
-  --hl-bg: #fff1bf;
-  --hl-text: inherit;
   --star: #f5a623;
   --ok: #22a06b;
   --danger: #e5484d;
@@ -45,8 +43,6 @@
   --text-3: #6f7480;
   --accent: #6ea0ff;
   --accent-bg: #26334d;
-  --hl-bg: #3d3520;
-  --hl-text: #ffe08a;
   --star: #f5b942;
   --ok: #3dbe85;
   --danger: #f26d72;
@@ -85,13 +81,6 @@ body {
 
 /* 翻译结果允许选中（不做技术对抗），其余界面默认不可选 */
 .selectable { user-select: text; }
-
-.hl {
-  background: var(--hl-bg);
-  color: var(--hl-text);
-  border-radius: var(--r-hl);
-  padding: 0 3px;
-}
 
 /* 细滚动条，悬停才显示 */
 ::-webkit-scrollbar { width: 6px; height: 6px; }

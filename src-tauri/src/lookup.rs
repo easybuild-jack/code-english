@@ -85,7 +85,16 @@ struct RawOutput {
 /// 解析失败就把原文当释义，不报错——查个词不值得打断用户
 pub fn parse_output(text: &str, content: &str) -> LookupResult {
     let cleaned = strip_code_fence(content.trim());
-    match serde_json::from_str::<RawOutput>(cleaned) {
+    // 部分兼容接口会再包一层 {"type":"json_object","content":"{...}"}。
+    // 先取出 content，避免把外层 JSON 原样显示给用户。
+    let nested = serde_json::from_str::<serde_json::Value>(cleaned)
+        .ok()
+        .and_then(|v| v.get("content")?.as_str().map(str::to_string));
+    let candidate = nested
+        .as_deref()
+        .map(|v| strip_code_fence(v.trim()))
+        .unwrap_or(cleaned);
+    match serde_json::from_str::<RawOutput>(candidate) {
         Ok(raw) if !raw.meaning.trim().is_empty() => LookupResult {
             text: text.to_string(),
             meaning: raw.meaning.trim().to_string(),
@@ -100,7 +109,7 @@ pub fn parse_output(text: &str, content: &str) -> LookupResult {
         },
         _ => LookupResult {
             text: text.to_string(),
-            meaning: cleaned.to_string(),
+            meaning: candidate.to_string(),
             other_meanings: vec![],
             pos: String::new(),
             ipa: String::new(),
@@ -129,6 +138,16 @@ mod tests {
         let r = parse_output("endpoint", "接口");
         assert_eq!(r.meaning, "接口");
         assert!(r.pos.is_empty());
+    }
+
+    #[test]
+    fn unwraps_json_object_envelope() {
+        let r = parse_output(
+            "push",
+            r#"{"type":"json_object","content":"{\"meaning\":\"推送\",\"other_meanings\":[\"推动\"],\"pos\":\"v.\",\"ipa\":\"pʊʃ\"}"}"#,
+        );
+        assert_eq!(r.meaning, "推送");
+        assert_eq!(r.other_meanings, ["推动"]);
     }
 
     #[test]

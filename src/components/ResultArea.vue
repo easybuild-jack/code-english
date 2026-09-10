@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, h, nextTick, ref, watch } from "vue";
 import { NButton, NSkeleton, useMessage } from "naive-ui";
-import { Volume2, Square, Star, CircleAlert } from "lucide-vue-next";
-import { api, guessKind, type Keyword } from "../api";
+import { Volume2, Square, CircleAlert, Sparkles } from "lucide-vue-next";
 import { useTranslate } from "../stores/translate";
 import { useTts } from "../composables/useTts";
 import WordCard from "./WordCard.vue";
@@ -32,31 +31,18 @@ type VChild = ReturnType<typeof h> | string;
 
 /** 每个英文单词包成可点的 <span class="w">，标点和空格原样保留 */
 function renderWords(text: string): VChild[] {
-  return text.split(/([A-Za-z][A-Za-z0-9'’-]*)/).filter(Boolean).map((tok, i) =>
-    i % 2 === 1 ? h("span", { class: "w" }, tok) : tok,
-  );
+  return text
+    .split(/([A-Za-z][A-Za-z0-9'’-]*)/)
+    .filter(Boolean)
+    .map((token) =>
+      /^[A-Za-z][A-Za-z0-9'’-]*$/.test(token)
+        ? h("span", { class: "w" }, token)
+        : token,
+    );
 }
 
-/** 关键词段落再包一层 <span class="hl">，大小写不敏感、整词匹配 */
-function renderSentence(sentence: string, keywords: Keyword[]): VChild[] {
-  const words = keywords.map((k) => k.word.trim()).filter(Boolean);
-  if (words.length === 0) return renderWords(sentence);
-  const escaped = words.map((w) => w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"));
-  const re = new RegExp(`(?<![A-Za-z0-9])(${escaped.join("|")})(?![A-Za-z0-9])`, "gi");
-  const nodes: VChild[] = [];
-  let last = 0;
-  for (const m of sentence.matchAll(re)) {
-    const i = m.index ?? 0;
-    if (i > last) nodes.push(...renderWords(sentence.slice(last, i)));
-    nodes.push(h("span", { class: "hl" }, renderWords(m[0])));
-    last = i + m[0].length;
-  }
-  if (last < sentence.length) nodes.push(...renderWords(sentence.slice(last)));
-  return nodes;
-}
-
-const Sentence = (props: { text: string; keywords: Keyword[] }) =>
-  h("span", { class: "txt selectable" }, renderSentence(props.text, props.keywords));
+const Sentence = (props: { text: string }) =>
+  h("span", { class: "txt selectable" }, renderWords(props.text));
 
 // ---- 点词 / 划词 ----
 
@@ -118,16 +104,6 @@ function onSentencesMouseUp(e: MouseEvent) {
 
 watch(() => [t.result, t.mode, t.status], () => (card.value = null));
 
-async function favorite(text: string, meaning = "", example = "") {
-  try {
-    const r = await api.addFavorite({ kind: guessKind(text), text, meaning, example });
-    message.success(r.created ? "已收藏" : "已收藏过，次数 +1");
-    await t.refreshFavoriteLookup();
-  } catch (e) {
-    message.error(String(e));
-  }
-}
-
 function speak(text: string) {
   tts.speak(text, (msg) => message.error(msg));
 }
@@ -173,10 +149,17 @@ defineExpose({
     </p>
 
     <!-- 翻译中 -->
-    <div v-else-if="t.status === 'loading'" class="skeleton">
-      <NSkeleton text :repeat="1" style="width: 100%" />
-      <NSkeleton text :repeat="1" style="width: 85%" />
-      <NSkeleton text :repeat="1" style="width: 60%" />
+    <div v-else-if="t.status === 'loading'" class="thinking">
+      <div class="thinking-head">
+        <span class="thinking-icon"><Sparkles :size="16" :stroke-width="1.75" /></span>
+        <span>正在理解语境</span>
+        <span class="thinking-dots"><i /><i /><i /></span>
+      </div>
+      <div class="skeleton">
+        <NSkeleton text :repeat="1" style="width: 100%" />
+        <NSkeleton text :repeat="1" style="width: 85%" />
+        <NSkeleton text :repeat="1" style="width: 60%" />
+      </div>
     </div>
 
     <!-- 出错 -->
@@ -192,7 +175,7 @@ defineExpose({
       <div class="sentences" @mouseup="onSentencesMouseUp">
         <div v-for="(s, i) in t.result.sentences" :key="i" class="sent" :data-text="s">
           <span v-if="t.result.sentences.length > 1" class="no">{{ i + 1 }}.</span>
-          <Sentence :text="s" :keywords="t.result.keywords" />
+          <Sentence :text="s" />
         </div>
         <div class="actions">
           <span class="tip">点单词或划选短语看释义</span>
@@ -221,27 +204,6 @@ defineExpose({
         模型没有按约定格式返回，以上为原始内容。<NButton text size="tiny" @click="t.run()">重试</NButton>
       </p>
 
-      <template v-if="t.result.keywords.length">
-        <hr />
-        <div v-for="k in t.result.keywords" :key="k.word" class="kw">
-          <div class="body">
-            <button class="word" :title="'朗读 ' + k.word" @click="speak(k.word)">
-              <span class="hl">{{ k.word }}</span>
-            </button>
-            <div class="desc">{{ k.note }}</div>
-            <div v-if="t.isFavorited(k.word)" class="meta">已收藏 · 第 {{ t.seenCount(k.word) }} 次遇到</div>
-          </div>
-          <button
-            class="icon-btn"
-            :class="{ active: t.isFavorited(k.word) }"
-            title="收藏"
-            @click="favorite(k.word, k.note, t.result.translation)"
-          >
-            <Star :size="16" :stroke-width="1.75" :fill="t.isFavorited(k.word) ? 'currentColor' : 'none'" />
-          </button>
-        </div>
-      </template>
-
     </template>
   </section>
 </template>
@@ -255,7 +217,31 @@ defineExpose({
   padding: 16px;
 }
 .placeholder { margin: 0; color: var(--text-3); font-size: var(--fs-sm); }
-.skeleton { display: flex; flex-direction: column; gap: 10px; }
+.thinking { padding-top: 2px; }
+.thinking-head {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 14px;
+  color: var(--text-2);
+  font-size: var(--fs-sm);
+}
+.thinking-icon {
+  display: inline-flex;
+  color: var(--accent);
+  animation: thinking-pulse 1.4s ease-in-out infinite;
+}
+.thinking-dots { display: inline-flex; align-items: center; gap: 3px; height: 16px; }
+.thinking-dots i {
+  width: 3px;
+  height: 3px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: thinking-dot 1.2s ease-in-out infinite;
+}
+.thinking-dots i:nth-child(2) { animation-delay: 160ms; }
+.thinking-dots i:nth-child(3) { animation-delay: 320ms; }
+.skeleton { display: flex; flex-direction: column; gap: 10px; opacity: 0.72; }
 .error {
   display: flex;
   align-items: center;
@@ -285,30 +271,21 @@ defineExpose({
   transition: background-color 120ms;
 }
 .sent :deep(.w:hover) { background: var(--bg-3); }
-.sent :deep(.hl .w:hover) { background: transparent; text-decoration: underline; text-underline-offset: 3px; }
 .actions { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 4px; }
 .tip { flex: 1; font-size: var(--fs-xs); color: var(--text-3); }
 
-hr { border: 0; border-top: 1px solid var(--border); margin: 16px 0; }
-
-.kw { display: flex; align-items: flex-start; gap: 8px; }
-.kw + .kw { margin-top: 12px; }
-.kw .body { flex: 1; min-width: 0; }
-.kw .word {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  font-family: var(--font-en);
-  font-size: var(--fs-lg);
-  font-weight: 600;
-  color: var(--text);
-  cursor: pointer;
-  text-align: left;
+@keyframes thinking-pulse {
+  0%, 100% { transform: scale(0.9); opacity: 0.55; }
+  50% { transform: scale(1.08); opacity: 1; }
 }
-.kw .word .hl { padding: 0 4px; }
-.kw .desc { font-size: var(--fs-sm); color: var(--text-2); margin-top: 2px; }
-.kw .meta { font-size: var(--fs-xs); color: var(--text-3); margin-top: 2px; }
-.kw .icon-btn { flex: none; margin-top: 3px; }
+@keyframes thinking-dot {
+  0%, 60%, 100% { transform: translateY(0); opacity: 0.35; }
+  30% { transform: translateY(-3px); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .thinking-icon,
+  .thinking-dots i { animation: none; }
+}
 
 .ask-head { display: flex; justify-content: flex-end; margin: -8px 0 4px; }
 .msg { display: flex; gap: 8px; align-items: flex-start; }
