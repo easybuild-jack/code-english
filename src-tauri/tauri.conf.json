@@ -1,6 +1,6 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "CodeEnglish",
+  "productName": "MyWordsTool",
   "version": "0.1.0",
   "identifier": "com.jackliu.codeenglish",
   "build": {
@@ -13,7 +13,7 @@
     "windows": [
       {
         "label": "main",
-        "title": "CodeEnglish",
+        "title": "MyWordsTool",
         "width": 400,
         "height": 520,
         "minWidth": 320,

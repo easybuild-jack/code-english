@@ -1,4 +1,4 @@
--- CodeEnglish 本地数据库
+-- MyWordsTool 本地数据库
 -- 对应《需求背景文档》第 6 章「本地数据」与《产品PRD》第 5、6、7 章
 
 PRAGMA journal_mode = WAL;

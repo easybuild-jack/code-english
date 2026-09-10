@@ -16,7 +16,7 @@ pub fn setup<R: Runtime>(app: &AppHandle<R>) -> tauri::Result<()> {
 
     TrayIconBuilder::with_id("main-tray")
         .icon(app.default_window_icon().cloned().expect("default icon"))
-        .tooltip("CodeEnglish")
+        .tooltip("MyWordsTool")
         .menu(&menu)
         .show_menu_on_left_click(false)
         .on_menu_event(|app, event| match event.id().as_ref() {
